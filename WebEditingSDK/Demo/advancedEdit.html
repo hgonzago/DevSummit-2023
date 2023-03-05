@@ -1,0 +1,354 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Streetlamp Status Reporter</title>
+
+    <script src="https://js.arcgis.com/calcite-components/1.0.7/calcite.esm.js" type="module"></script>
+    <link rel="stylesheet" href="https://js.arcgis.com/calcite-components/1.0.7/calcite.css" />
+    
+    <script src="https://jsdev.arcgis.com/4.26/"></script>
+    <link rel="stylesheet" href="https://jsdev.arcgis.com/4.26/esri/themes/light/main.css" />
+  </head>
+  
+  <style>
+    html,
+    body,
+    #viewDiv {
+      display: flex;
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+
+    calcite-loader {
+      align-self: center;
+      justify-self: center;
+    }
+
+    calcite-notice {
+      bottom: 40px;
+      width: 350px;
+    }
+
+    calcite-icon {
+      color: var(--calcite-ui-brand);
+    }
+
+    .center {
+      margin-left: auto;
+      margin-right: auto;
+      left: 0;
+      right: 0;
+      position: absolute;
+    }
+
+    #success-label,
+    #error-label {
+      bottom: 35%;
+      width: fit-content;
+    }
+
+    .stepper-container {
+      height: 300px;
+    }
+
+    #search-container {
+      border: 0.8px solid #323232;
+      height: 34px;
+      width: 100%;
+    }
+
+  </style>
+  <script type="text/javascript">
+    require([
+  "esri/config",
+  "esri/WebMap",
+  "esri/views/MapView",
+  "esri/widgets/Feature",
+  "esri/widgets/FeatureForm",
+  "esri/widgets/Home",
+  "esri/widgets/Legend",
+  "esri/widgets/Search"
+], function(
+  esriConfig, WebMap, MapView, FeatureWidget, FeatureForm, Home, Legend, Search
+) {
+  
+  // API key used for improved searching
+  // esriConfig.apiKey = "AAPKec11c1a7c666408da7090f0e585364c8PdtshEhow6q2TzGuWFsaO5VIlJ9aPoKhX19-oSNu4lTAZUkufnX6xjyCJLRADo6r";
+
+  const map = new WebMap({
+    portalItem: { id: "1f12ca6d13a845ff996d66f832615121" }
+  });
+
+  const view = new MapView({
+    container: "viewDiv",
+    map
+  });
+
+  //////////////////////////////////////////////////////
+  //  Widget Configuration
+  //////////////////////////////////////////////////////
+
+  const formWidget = new FeatureForm({ 
+    view 
+  }, "form-container");
+
+  const featureWidget = new FeatureWidget({
+    visibleElements: { title: false },
+    map,
+    view
+  }, "feature-container");
+
+  const search = new Search({
+    popupEnabled: false,
+    resultGraphicEnabled: false,
+    view
+  }, "search-container");
+  
+  const legend = new Legend({ view });
+  const homeWidget = new Home({ view });
+  
+  // Add a 'Home' button below zoom navigation buttons
+  view.ui.add(homeWidget, "top-left");
+  view.ui.add(legend, "top-right");
+
+  // Disable the default popup
+  view.popup.autoOpenEnabled = false;
+
+  //////////////////////////////////////////////////////
+  //  App State Logic
+  //////////////////////////////////////////////////////
+
+  // Step 1 - Identify an area to search
+  search.on("search-complete", () => {
+    document.getElementById("location-modal").open = false;
+  });
+  
+  // Step 1.5 - Identify a specific streetlamp
+  view.on("click", async(evt) => {
+    const feature = await getClosestFeature(evt);
+    
+    // Streetlamp found; fetch all attributes before continuing to Step 2
+    if (feature) {
+      const featureAllAtrributes = await getFullFeature(feature);
+      formWidget.feature = featureAllAtrributes;
+      
+      document.getElementById("go-to-review-button").disabled = true;
+      document.getElementById("details-stepper--review").disabled = true;
+      goToStep("details");
+    }
+  });
+
+  // Step 2 - Updating status of the streetlamp
+  document.getElementById("go-to-review-button").onclick = (e) => {
+    const feature = getUpdatedFeature(formWidget.feature.clone(), formWidget.getValues());
+
+    formWidget.feature = feature;
+    featureWidget.graphic = feature;
+    goToStep("review");
+  };
+
+  // Step 3 - Review changes 
+  // Logic to submit the form when updates after verifying updates
+  document.getElementById("submit-button").onclick = () => {
+    document.getElementById("review-content-wrapper").hidden = true;
+    document.getElementById("submit-loader").hidden = false;
+    formWidget.submit();
+  };
+
+  // Final Step - Save changes
+  // Logic committing updates back to the data source
+  formWidget.on("submit", async (evt) => {
+    const feature = formWidget.feature;
+    const layer = feature.layer;
+    const response = await layer.applyEdits({ updateFeatures: [feature] });
+
+    document.getElementById("submit-loader").hidden = true;
+    document.getElementById("feature-container").hidden = false;
+    document.getElementById("cancel-button").disabled = true;
+    document.getElementById("submit-button").disabled = true;
+
+    // Show a different message depending on if the update was successful
+    if (response.updateFeatureResults.length && !response.updateFeatureResults[0].error) {
+      document.getElementById("success-label").hidden = false;
+      document.getElementById("error-label").hidden = true;
+    } else {
+      document.getElementById("success-label").hidden = true;
+      document.getElementById("error-label").hidden = false;
+    }
+  });
+
+  // Used to identify the nearest feature based on the provided view event.
+  // Nearest result is used when multiple hits are returned.
+  async function getClosestFeature(evt) {
+    const response = await view.hitTest(evt);
+
+    if (response.results.length) {
+      const result = response.results[0];
+
+      if (result.graphic && result.graphic.geometry) {
+        return result.graphic;
+      }
+    }
+
+    return null;
+  }
+
+  // Returns full resolution feature from the layer
+  async function getFullFeature(feature) {
+    const layer = feature.layer;
+    const query = layer.createQuery();
+    query.outFields = ["*"];
+    query.objectIds = [feature.attributes[layer.objectIdField]];
+
+    const response = await layer.queryFeatures(query);
+
+    return response.features.length ? response.features[0] : null;
+  }
+
+  // Loop through updated attributes and assign
+  // the updated values to feature attributes.
+  function getUpdatedFeature(feature, attributes) {
+    Object.keys(attributes).forEach((key) => {
+      feature.attributes[key] = attributes[key];
+    });
+
+    return feature;
+  }
+
+  //////////////////////////////////////////////////////
+  //  UI Visibility
+  //////////////////////////////////////////////////////
+  
+  // Hide the loading indicator; show the app
+  view.when(() => {
+    document.querySelector("calcite-loader").hidden = true;
+  });
+
+  // Logic for displaying the 'Next' button after 
+  // updating the form in the 'Details' step.
+  formWidget.on("value-change", (evt) => {
+    document.getElementById("go-to-review-button").disabled = false;
+    document.getElementById("details-stepper--review").disabled = false;
+  });
+
+  // document.getElementById("go-to-review-button").onclick = () => goToStep("review");
+  document.getElementById("cancel-button").onclick = () => goToStep("location");
+  document.getElementById("restart-button").onclick = () => goToStep("location");
+
+  // Logic for setting the current step based on interaction with
+  // specific <calcite-stepper-item> components.
+  document.querySelectorAll("calcite-stepper")
+    .forEach((stepper) => stepper.addEventListener(
+      "calciteStepperItemChange", 
+      () => goToStep(stepper.selectedItem.dataset.actionId)
+    ));
+
+  // Logic controlling the current app state, represented by different steps.
+  // Different steps utilize different views or modals.
+  function goToStep(id) {
+    const locationModal = document.getElementById("location-modal");
+    const detailsModal = document.getElementById("details-modal");
+    const reviewModal = document.getElementById("review-modal");
+
+    // Open the associated calcite-modal 
+    locationModal.open = locationModal.id.includes(id);
+    detailsModal.open = detailsModal.id.includes(id);
+    reviewModal.open = reviewModal.id.includes(id);
+
+    switch (id) {
+      case "review":
+        document.getElementById("review-content-wrapper").hidden = false;
+        document.getElementById("review-stepper--review").selected = true;
+        document.getElementById("success-label").hidden = true;
+        document.getElementById("error-label").hidden = true;
+        document.getElementById("cancel-button").disabled = false;
+        document.getElementById("submit-button").disabled = false;
+        break;
+      case "details":
+        document.getElementById("details-stepper--details").selected = true;
+        document.getElementById("go-to-review-button").disabled = true;
+        break;
+      case "location":
+      default:
+        formWidget.feature = null;
+        document.getElementById("location-stepper--location").selected = true;
+      }
+  }
+});
+  </script>
+  <body>
+    <calcite-loader></calcite-loader>
+    <calcite-shell content-behind>
+      <calcite-modal slot="alerts" id="location-modal" kind="brand" close-button-disabled escape-disabled outside-close-disabled open>
+        <div slot="header" class="modal-title">
+          Streetlamp Status Reporter
+        </div>
+        <div class="stepper-container" slot="content">
+          <calcite-stepper numbered scale="s" icon>
+            <calcite-stepper-item data-action-id="location" heading="Location" id="location-stepper--location" selected></calcite-stepper-item>
+            <calcite-stepper-item data-action-id="details" heading="Details" disabled></calcite-stepper-item>
+            <calcite-stepper-item data-action-id="review" heading="Review" disabled></calcite-stepper-item>
+          </calcite-stepper>
+          <calcite-label>
+            Search for a street or intersection to begin
+            <div id="search-container"></div>
+            <calcite-input-message icon="information" status="idle">
+              Examples: 400 Frontage Rd; Beacon St and Exeter St
+            </calcite-input-message>
+          </calcite-label>
+        </div>
+      </calcite-modal>
+      <calcite-modal slot="alerts" id="details-modal" kind="brand" close-button-disabled escape-disabled outside-close-disabled>
+        <div slot="header" class="modal-title">
+          Streetlamp Status Reporter
+        </div>
+        <div class="stepper-container" slot="content">
+          <calcite-stepper numbered scale="s" icon>
+            <calcite-stepper-item data-action-id="location" heading="Location" complete></calcite-stepper-item>
+            <calcite-stepper-item data-action-id="details" heading="Details" id="details-stepper--details" selected></calcite-stepper-item>
+            <calcite-stepper-item data-action-id="review" heading="Review" id="details-stepper--review" disabled></calcite-stepper-item>
+          </calcite-stepper>
+          <calcite-label>
+            <div id="form-container"></div>
+          </calcite-label>
+        </div>
+        <calcite-button id="go-to-review-button" slot="primary" width="full" disabled>Next</calcite-button>
+      </calcite-modal>
+      <calcite-modal slot="alerts" id="review-modal" kind="brand" close-button-disabled escape-disabled outside-close-disabled>
+        <div slot="header" class="modal-title">
+          Streetlamp Status Reporter
+        </div>
+        <div class="stepper-container" slot="content">
+          <calcite-stepper numbered scale="s" icon>
+            <calcite-stepper-item data-action-id="location" heading="Location" complete></calcite-stepper-item>
+            <calcite-stepper-item data-action-id="details" heading="Details" complete></calcite-stepper-item>
+            <calcite-stepper-item data-action-id="review" heading="Review" id="review-stepper--review" selected></calcite-stepper-item>
+          </calcite-stepper>
+          <calcite-loader id="submit-loader" hidden></calcite-loader>
+          <calcite-label id="review-content-wrapper">
+            Updates:
+            <div id="feature-container"></div>
+          </calcite-label>
+          <calcite-label id="success-label" class="center" layout="inline" alignment="center" hidden>
+            <calcite-icon icon="thumbs-up"></calcite-icon>
+            Success! 
+          </calcite-label>
+          <calcite-label id="error-label" class="center" layout="inline" alignment="center" hidden>
+            <calcite-icon icon="thumbs-down"></calcite-icon>
+            Error! 
+          </calcite-label>
+        </div>
+        <calcite-button id="restart-button" slot="back" width="full" appearance="outline">Restart</calcite-button>
+        <calcite-button id="cancel-button" slot="secondary" width="full" appearance="outline">Cancel</calcite-button>
+        <calcite-button id="submit-button" slot="primary" width="full">Submit</calcite-button>
+      </calcite-modal>
+      <calcite-notice class="center" open icon="touch" slot="center-row" scale="l">
+        <div slot="message">Click on a streetlamp to continue.</div>
+      </calcite-notice>
+      <div id="viewDiv"></div>
+    </calcite-shell>
+  </body>
+</html>
