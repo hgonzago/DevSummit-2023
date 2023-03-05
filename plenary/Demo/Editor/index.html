@@ -56,17 +56,13 @@
       <!-- Visibility panel from the SDK -->
       <calcite-panel heading="Group visibility expression" headingLevel="2" data-panel-id="visibility" hidden>
         <div id="visibility-container">
-        <pre><code class="language-javascript">// Show the proximity violation fields if the Tree information is set 
-// and not using Shrub treetype domain value.
-// Also show if the distance between the tree and any
-// building is less than 10 feet.
+        <pre><code class="language-javascript">
+// Show the proximity violation fields if the 
+// distance between the tree and any building 
+// is less than 10 feet.
             
-if (($feature.treetype != "2") &&
-(!IsEmpty($feature.CommonName)) &&
-($feature["distancetobldg"] < 10)) {
-
+if ($feature["distancetobldg"] < 10) {
   return true;
-
 }
 
 return false;</code></pre></div>
