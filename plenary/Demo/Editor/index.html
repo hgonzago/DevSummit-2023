@@ -64,31 +64,33 @@ if ($feature["distancetobldg"] < 10) {
 
 return false;</code></pre></div>
       </calcite-panel>
-
       <!-- Web app panel showing small snippet of web app used in demo-->
       <calcite-panel heading="Web app code" headingLevel="2" data-panel-id="webappCode" hidden>
         <div id="webappCode-container"><pre><code class="language-javascript">
-  require([
-    "esri/WebMap",
-    "esri/views/MapView",
-    "esri/widgets/Editor"
-    ], (WebMap, MapView, Editor) => {
-      // Create a map from the referenced webmap item id
-      const webmap = new WebMap({
-        portalItem: {
-          id: "c00a227875b24891a1feca50157d73be"
-        }
-      });
-      const view = new MapView({
-        container: "viewDiv",
-        map: webmap
-      });
-      const editor = new Editor({
-        view,
-      });
-      view.ui.add(editor, "top-right");
-  });</code></pre></div>
-      </calcite-panel>
+require([
+  "esri/WebMap",
+  "esri/views/MapView",
+  "esri/widgets/Editor"
+], (WebMap, MapView, Editor) => {
+  // Create a map from the referenced webmap item id
+  const webmap = new WebMap({
+    portalItem: {
+      id: "c00a227875b24891a1feca50157d73be"
+    }
+  });
+      
+  const view = new MapView({
+    container: "viewDiv",
+    map: webmap
+  });
+    
+  const editor = new Editor({
+    view
+  });
+
+  view.ui.add(editor, "top-right");
+});</code></pre></div>
+  </calcite-panel>
 
     </calcite-shell-panel>
 
