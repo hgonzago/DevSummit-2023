@@ -17,7 +17,7 @@
       padding: {
         left: 49
       },
-      zoom: 20
+      zoom: 21
     });
 
     // Hide the loading indicator; show the app

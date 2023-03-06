@@ -32,26 +32,23 @@
 
       <!-- Arcade syntax panel showing small snippet of syntax used in demo-->
       <calcite-panel heading="Parcel ID expression" headingLevel = "2"
-        data-panel-id="arcadeSyntax" hidden>
-        <div id="arcadeSyntax-container">
-          <pre><code class="language-javascript">  
-  // Check that there is a feature
-  if (IsEmpty(Geometry($feature))) {
-    return;
-  }
-  
-  // Grab the parcels that intersect tree feature
-  var parcels = Intersects( FeatureSetByName($map,"Parcels"), $feature);
-  
-  // Return the first returned parcel
-  if (IsEmpty(parcels)) {
-    return null;
-  } else {
-    var parcel = First(parcels);
-    return parcel.PARCEL;
-  }</code></pre>
-        </div>
-      </calcite-panel>
+        data-panel-id="arcadeSyntax" hidden><div id="arcadeSyntax-container"><pre><code class="language-javascript">
+// Check that there is a feature
+if (IsEmpty(Geometry($feature))) {
+  return;
+}
+
+// Grab the parcels that intersect tree feature
+var parcels = Intersects( FeatureSetByName($map,"Parcels"), $feature);
+
+// Return the first returned parcel
+if (IsEmpty(parcels)) {
+  return null;
+} else {
+  var parcel = First(parcels);
+  return parcel.PARCEL;
+}</code></pre></div>
+</calcite-panel>
 
       <!-- Visibility panel from the SDK -->
       <calcite-panel heading="Group visibility expression" headingLevel="2" data-panel-id="visibility" hidden>
