@@ -1,10 +1,20 @@
   require([
     "esri/WebMap",
     "esri/views/MapView",
-    "esri/widgets/Editor"
+    "esri/widgets/Editor",
+    "esri/identity/OAuthInfo",
+    "esri/identity/IdentityManager"
   ], function (
-    WebMap, MapView, Editor
+    WebMap, MapView, Editor, oauthInfo, esriId
   ) {
+
+    const oauthInfo = new OAuthInfo({
+      appId: "t7L2ThUVWpF1mSRE",
+      flowType: "auto", // default that uses two-step flow
+      popup: false
+    });
+
+    esriId.registerOAuthInfos([oauthInfo]);
 
     const map = new WebMap({
       portalItem: { id: "736bed524f294e2e8866036b3dc72723" }
@@ -65,11 +75,6 @@
       }, "editor");
 
       }
-
-      // const editor = new Editor({
-      //   map,
-      //   view
-      // }, "editor");
 
     });
   });
