@@ -1,0 +1,60 @@
+html,
+body,
+#viewDiv {
+  display: flex;
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+}
+
+calcite-loader {
+  align-self: center;
+  justify-self: center;
+}
+
+calcite-notice {
+  bottom: 40px;
+  width: 350px;
+}
+
+calcite-icon {
+  color: var(--calcite-ui-brand);
+}
+
+.center {
+  margin-left: auto;
+  margin-right: auto;
+  left: 0;
+  right: 0;
+  position: absolute;
+}
+
+#success-label,
+#error-label {
+  bottom: 35%;
+  width: fit-content;
+}
+
+.stepper-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  height: 300px;
+  margin: 2rem 4rem;
+}
+
+#search-container {
+  border: 0.8px solid #323232;
+  height: 34px;
+  width: 100%;
+}
+
+.esri-feature-form {
+  background-color: #FFF;
+}
+
+#sample-buttons {
+  display: flex;
+  gap: .5rem;
+}

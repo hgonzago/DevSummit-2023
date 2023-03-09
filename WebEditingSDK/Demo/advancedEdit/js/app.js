@@ -1,80 +1,4 @@
-<html>
-
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Streetlamp Status Reporter</title>
-
-  <script src="https://js.arcgis.com/calcite-components/1.0.5/calcite.esm.js" type="module"></script>
-  <link rel="stylesheet" href="https://js.arcgis.com/calcite-components/1.0.5/calcite.css" />
-
-  <script src="https://jsdev.arcgis.com/4.26/"></script>
-  <link rel="stylesheet" href="https://jsdev.arcgis.com/4.26/esri/themes/light/main.css" />
-</head>
-<style>
-  html,
-  body,
-  #viewDiv {
-    display: flex;
-    padding: 0;
-    margin: 0;
-    height: 100%;
-    width: 100%;
-  }
-
-  calcite-loader {
-    align-self: center;
-    justify-self: center;
-  }
-
-  calcite-notice {
-    bottom: 40px;
-    width: 350px;
-  }
-
-  calcite-icon {
-    color: var(--calcite-ui-brand);
-  }
-
-  .center {
-    margin-left: auto;
-    margin-right: auto;
-    left: 0;
-    right: 0;
-    position: absolute;
-  }
-
-  #success-label,
-  #error-label {
-    bottom: 35%;
-    width: fit-content;
-  }
-
-  .stepper-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    height: 300px;
-    margin: 2rem 4rem;
-  }
-
-  #search-container {
-    border: 0.8px solid #323232;
-    height: 34px;
-    width: 100%;
-  }
-
-  .esri-feature-form {
-    background-color: #FFF;
-  }
-
-  #sample-buttons {
-    display: flex;
-    gap: .5rem;
-  }
-</style>
-<script type="text/javascript">
-  require([
+require([
     "esri/config",
     "esri/WebMap",
     "esri/views/MapView",
@@ -82,14 +6,21 @@
     "esri/widgets/FeatureForm",
     "esri/widgets/Home",
     "esri/widgets/Legend",
-    "esri/widgets/Search"
+    "esri/widgets/Search",
+    "esri/identity/OAuthInfo",
+    "esri/identity/IdentityManager"
   ], function (
-    esriConfig, WebMap, MapView, FeatureWidget, FeatureForm, Home, Legend, Search
+    esriConfig, WebMap, MapView, FeatureWidget, FeatureForm, Home, Legend, Search, OAuthInfo, esriId
   ) {
 
-    // API key used for improved searching
-    // esriConfig.apiKey = "AAPKec11c1a7c666408da7090f0e585364c8PdtshEhow6q2TzGuWFsaO5VIlJ9aPoKhX19-oSNu4lTAZUkufnX6xjyCJLRADo6r";
+    const oauthInfo = new OAuthInfo({
+      appId: "t7L2ThUVWpF1mSRE",
+      flowType: "auto", // default that uses two-step flow
+      popup: false
+    });
 
+    esriId.registerOAuthInfos([oauthInfo]);
+    
     const map = new WebMap({
       portalItem: { id: "1f12ca6d13a845ff996d66f832615121" }
     });
@@ -287,88 +218,3 @@
       }
     }
   });
-
-</script>
-
-<body>
-  <calcite-loader></calcite-loader>
-  <calcite-shell content-behind>
-    <calcite-modal slot="alerts" id="location-modal" kind="brand" close-button-disabled escape-disabled
-      outside-close-disabled open>
-      <div slot="header" class="modal-title">Update streetlamp status</div>
-      <div class="stepper-container" slot="content">
-        <calcite-stepper numbered scale="s" icon>
-          <calcite-stepper-item data-action-id="location" heading="Location" id="location-stepper--location"
-            selected></calcite-stepper-item>
-          <calcite-stepper-item data-action-id="details" heading="Details" disabled></calcite-stepper-item>
-          <calcite-stepper-item data-action-id="review" heading="Review" disabled></calcite-stepper-item>
-        </calcite-stepper>
-        <calcite-label>
-          Search for a street or intersection to begin
-          <div id="search-container"></div>
-          <calcite-input-message icon="information" status="idle">Examples: 400 Frontage Rd; Beacon St and Exeter
-            St</calcite-input-message>
-        </calcite-label>
-      </div>
-    </calcite-modal>
-    <calcite-modal slot="alerts" id="details-modal" kind="brand" close-button-disabled escape-disabled
-      outside-close-disabled>
-      <div slot="header" class="modal-title">
-        Update streetlamp status
-      </div>
-      <div class="stepper-container" slot="content">
-        <calcite-stepper numbered scale="s" icon>
-          <calcite-stepper-item data-action-id="location" heading="Location" complete></calcite-stepper-item>
-          <calcite-stepper-item data-action-id="details" heading="Details" id="details-stepper--details"
-            selected></calcite-stepper-item>
-          <calcite-stepper-item data-action-id="review" heading="Review" id="details-stepper--review"
-            disabled></calcite-stepper-item>
-        </calcite-stepper>
-        <calcite-label>
-          <div id="form-container"></div>
-        </calcite-label>
-      </div>
-      <calcite-button id="go-to-review-button" slot="primary" width="full" disabled>Next</calcite-button>
-    </calcite-modal>
-    <calcite-modal slot="alerts" id="review-modal" kind="brand" close-button-disabled escape-disabled
-      outside-close-disabled>
-      <div slot="header" class="modal-title">
-        Update streetlamp status
-      </div>
-      <div class="stepper-container" slot="content">
-        <calcite-stepper numbered scale="s" icon>
-          <calcite-stepper-item data-action-id="location" heading="Location" complete></calcite-stepper-item>
-          <calcite-stepper-item data-action-id="details" heading="Details" complete></calcite-stepper-item>
-          <calcite-stepper-item data-action-id="review" heading="Review" id="review-stepper--review"
-            selected></calcite-stepper-item>
-        </calcite-stepper>
-        <calcite-loader id="submit-loader" hidden></calcite-loader>
-        <calcite-label id="review-content-wrapper">
-          <div id="feature-container"></div>
-        </calcite-label>
-        <div id="success-label" hidden>
-          <calcite-icon id="sample-icon" scale="l" icon="check-circle-f"></calcite-icon>
-          <h3>Success!</h3>
-          <p>Your report was successfully submitted.</p>
-          <div id="sample-buttons">
-            <calcite-button id="restart-button" kind="neutral" icon="chevron-left" scale="l">
-              Restart
-            </calcite-button>
-          </div>
-        </div>
-        <calcite-label id="error-label" class="center" layout="inline" alignment="center" hidden>
-          <calcite-icon icon="thumbs-down"></calcite-icon>
-          Error! Something went wrong...
-        </calcite-label>
-      </div>
-      <calcite-button id="cancel-button" slot="secondary" width="full" appearance="outline">Cancel</calcite-button>
-      <calcite-button id="submit-button" slot="primary" width="full">Submit</calcite-button>
-    </calcite-modal>
-    <calcite-notice class="center" open icon="touch" slot="center-row" scale="l">
-      <div slot="message">Click on a streetlamp to continue.</div>
-    </calcite-notice>
-    <div id="viewDiv"></div>
-  </calcite-shell>
-</body>
-
-</html>
