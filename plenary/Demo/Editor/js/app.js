@@ -5,7 +5,7 @@
     "esri/identity/OAuthInfo",
     "esri/identity/IdentityManager"
   ], function (
-    WebMap, MapView, Editor, oauthInfo, esriId
+    WebMap, MapView, Editor, OAuthInfo, esriId
   ) {
 
     const oauthInfo = new OAuthInfo({
